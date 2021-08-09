@@ -1,9 +1,3 @@
-class a {
-  method(){
-    this.b = 20;
-  }
-}
+let arr = [,1]
 
-const f = new a();
-f.method();
-console.log(f.b)
+console.log(arr.length)
