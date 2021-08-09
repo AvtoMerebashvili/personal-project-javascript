@@ -29,20 +29,20 @@ class Transaction {
         for (let step of scenario) {
             try {
                     Validator.step(step);
-                    self.logs[step.index]={
+                    self.logs[step.index-1]={
                         index: step.index,
                         meta: step.meta,
                         error: null
                     }
                 } catch (err) {
                     self.logs[self.#findEmpty(self.logs)]={
-                    index: step.index,
-                    meta: step.meta,
-                    error: {
-                        name: err.name,
-                        message: err.message,
-                        stack: err.stack,
-                    },
+                        index: step.index,
+                        meta: step.meta,
+                        error: {
+                            name: err.name,
+                            message: err.message,
+                            stack: err.stack,
+                        },
                     };
                     reject(self.logs)
                     break;
@@ -50,7 +50,8 @@ class Transaction {
             
             self.#scenarioInfo.steps.set(step.index, step);
         }
-      
+        Validator.AllStep(self.logs,reject)
+        
       self.#scenarioInfo.steps.get(self.#scenarioInfo.currentstate + 1);
       resolve(
           self.logs
@@ -58,15 +59,11 @@ class Transaction {
     });
   }
   #findEmpty(arr){
-    if(arr.length === 0) return 1;
-    else{
-        for(let i=1; i<=arr.length; i++){
-            if(arr[i] === undefined){
-                return i;
-            } 
-        }
+    for(let i=0; i<arr.length; i++){
+        if(arr[i] === undefined){
+            return i;
+        } 
     }
-      
   }
 //   read() {
 //     console.log(this.#scenarioInfo);
@@ -79,18 +76,39 @@ class Validator {
   }
 
   static step(step){
-        if (step.index == undefined)
-          throw new Error("index property is required");
-        else if (step.call == undefined)
-          throw new Error("call method is required");
-        else if (step.meta == undefined)
-          throw new Error("meta property is required");
-        else if (step.meta != undefined) {
-          if (step.meta.title == undefined) throw new Error("title is required");
-          else if(step.meta.description == undefined)  throw new Error("description is required");
-        } 
+        if (step.index == undefined) throw new Error("index property is required");
+            else{
+                if(typeof step.index != 'number') throw new Error('Type of index should be number')
+            }
+
+        if (step.call == undefined)  throw new Error("call method is required");
+            else{
+                if(typeof step.call != 'function') throw new TypeError('type of call must be function')
+            }
+
+        if (step.meta == undefined)  throw new Error("meta property is required");
+            else if (step.meta != undefined){
+                if(typeof step.meta != 'object' || Array.isArray(step.meta)) throw new TypeError('type of meta must be object')
+                else{
+                    if (step.meta.title == undefined) throw new Error("title is required");
+                    else{
+                        if(typeof step.meta.title != 'string') throw new TypeError('type of title must be string')
+                    }
+                    if(step.meta.description == undefined)  throw new Error("description is required");
+                    else{
+                        if(typeof step.meta.description != 'string') throw new TypeError('description of title must be string')
+                    }
+                } 
+            }
+
   }
 
+  static AllStep(steps,reject){
+    for(let i = 0; i<steps.length; i++){
+        if(steps[i] == undefined) reject(`The chain is broken between steps on ${i+1}`)
+    }
+  }
+  
   static call(param, type) {}
 }
 
@@ -118,17 +136,7 @@ const scenario = [
     // callback for rollback
     restore: async (store) => {},
   },
-  {
-    index: 1,
-    meta: {
-      title: "Delete customer",
-      description: "This action is responsible for deleting customer",
-    },
-    // callback for main execution
-    call: async (store) => {},
-    // callback for rollback
-    restore: async (store) => {},
-  },
+ 
 ];
 
 const transaction = new Transaction();
