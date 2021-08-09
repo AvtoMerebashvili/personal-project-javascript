@@ -14,7 +14,6 @@ class Transaction {
 
         return new Promise(function (resolve, reject) {
             
-            Validator.CheckChain(self.logs,self,self.#scenarioInfo)
             if(self.#scenarioInfo.status)resolve(self.logs)
             else reject(self.logs)
         
@@ -66,6 +65,9 @@ class Transaction {
         }
     }
 
+    read(){
+        console.log(this.#scenarioInfo.sortedArr)
+    }
 }
 
 class Validator {
@@ -100,31 +102,6 @@ class Validator {
                 }
 
     }
-
-    static CheckChain(steps,self,status){
-        let i=0;
-        try{
-            for(i = 0; i<steps.length; i++){
-                if(steps[i] == undefined){
-                status = false;
-                throw new SyntaxError(`The chain is broken on index ${i+1}`)
-                }
-            }
-        }catch(err){
-                self.logs[i] = {
-                    index: 'no index',
-                    meta: 'no meta',
-                    error: {
-                        name: err.name,
-                        message: err.message,
-                        stack: err.stack,
-                    }
-                }
-                for(let j = i; j<steps.length; j++){
-                    steps.pop()
-                }
-        }
-    }
 }
 
 const scenario = [
@@ -157,7 +134,7 @@ const transaction = new Transaction();
 
 (async () => {
     try {
-        console.log(await transaction.dispatch(scenario));
+        await transaction.dispatch(scenario);
         const store = transaction.store; // {} | null
         const logs = transaction.logs; // []    
         transaction.read()
