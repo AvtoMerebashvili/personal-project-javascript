@@ -3,15 +3,17 @@ class Transaction {
     #scenarioInfo = {
         currentstate: 0,
         status: true,
+        sortedArr: []
     };
 
     dispatch(scenario) {
         this.#validateScenario(scenario)
+        this.#sortSteps(scenario,this.#scenarioInfo.sortedArr)
         this.store = {};
         let self = this;
 
         return new Promise(function (resolve, reject) {
-            self.#sortSteps(scenario)
+            
             Validator.CheckChain(self.logs,self,self.#scenarioInfo)
             if(self.#scenarioInfo.status)resolve(self.logs)
             else reject(self.logs)
@@ -35,33 +37,26 @@ class Transaction {
         } 
     }
 
+    #sortSteps(scenario, sortArray){
+        for(let i=0; i<scenario.length; i++){
+            sortArray[i]='free';
+        }
 
-    #sortSteps(scenario,reject){
-        for (let step of scenario) {
-            try {
-                    Validator.step(step);
-                    this.logs[step.index-1]={
-                        index: step.index,
-                        meta: step.meta,
-                        error: null
-                    }
-                } catch (err) {
-                    this.logs[this.#findEmpty(this.logs)]={
-                        index: step.index,
-                        meta: step.meta,
-                        error: {
-                            name: err.name,
-                            message: err.message,
-                            stack: err.stack,
-                        },
-                    };
-                    this.#scenarioInfo.status = false;
-                    break;
-                }
-            
+        for(let step of scenario){
+            if(step.index){
+                if(sortArray[step.index-1]!='free'){
+                    findfreespace(sortArray,step,sortArray[step.index-1])
+                }else sortArray[step.index-1] = step;
+            }
+            else{
+                sortArray[sortArray.indexOf('free')]=step;
+            }
+        }
+        function findfreespace(sortArray,newitem,olditem){
+            sortArray[newitem.index-1] = newitem;
+            sortArray[sortArray.indexOf('free')]=olditem;
         }
     }
-
 
     #findEmpty(arr){
         for(let i=0; i<arr.length; i++){
@@ -156,7 +151,6 @@ const scenario = [
     // callback for rollback
     restore: async (store) => {},
   },
- 
 ];
 
 const transaction = new Transaction();
@@ -165,8 +159,8 @@ const transaction = new Transaction();
     try {
         console.log(await transaction.dispatch(scenario));
         const store = transaction.store; // {} | null
-        const logs = transaction.logs; // []
-    
+        const logs = transaction.logs; // []    
+        transaction.read()
     } catch (err) {
         console.log(err);
     }
