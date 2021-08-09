@@ -146,7 +146,7 @@ const scenario = [
     restore: async (store) => {},
   },
   {
-    index: 3,
+    index: 2,
     meta: {
         title: 'Delete customer',
         description: 'This action is responsible for deleting customer'
