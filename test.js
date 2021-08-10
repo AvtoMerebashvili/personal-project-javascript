@@ -1,19 +1,31 @@
+let ob = {
+    error: 2
+}
 
-// let obj = {
-//  func: async  () => {
-//         (
-//             async = () =>{
-//                 throw new Error('check Error')
-//             }
-//         )()
-//     }
-// }
 
-// obj.func().then( () =>{
-//     console.log(2)
-// }).catch((err)=> console.log(err))
- 
+async function f(){
+    throw new Error('check');
+}
 
-var arr = [{},{}]
+for(let i=0; i<2; i++){
+    (async () =>{
+    try{   
+         console.log(ob.error)
+        await f()
+        console.log('i was here')
+     }catch(e){
+         console.log('i was in catch')
+         ob.error=3;
+    console.log(e.message)
+        return 
+        }
+})();
 
-for (let i of arr)console.log(typeof i)
+if(ob.error === 3) break;
+}
+
+
+
+       
+    
+   

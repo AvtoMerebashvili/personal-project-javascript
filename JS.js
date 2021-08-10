@@ -3,7 +3,9 @@ class Transaction {
     #scenarioInfo = {
         currentstate: 0,
         status: true,
-        sortedArr: []
+        sortedArr: [],
+        storebefore: {},
+        error: null
     };
 
     dispatch(scenario) {
@@ -15,7 +17,7 @@ class Transaction {
         return new Promise(function (resolve, reject) {
             self.#followSteps(self.#scenarioInfo.sortedArr, self.#scenarioInfo)
 
-            resolve(self.logs)
+            resolve()
             
         
         });
@@ -58,53 +60,66 @@ class Transaction {
         }
     }
 
-    #validateSteps(step, scenarioInfo){
-        try{
-            Validator.step(step);
-            this.logs.push({
-                index: step.index,
-                meta: step.meta,
-                storeBefore: {},
-                storeAfter: {},
-                error: null
-            })
-            scenarioInfo.status= true;
-            scenarioInfo.currentstate +=1;
-        }catch(err){
-            scenarioInfo.status = false;
-            if(typeof step === 'object' && !Array.isArray(step)){
-                this.logs.push({
-                    index: step.index,
-                    meta: step.meta,
-                    error: {
-                        name: err.name,
-                        message: err.message,
-                        stack: err.stack
-                    }
-                })
-            }else{
-                this.logs.push({
-                    index: undefined,
-                    meta: undefined,
-                    error: {
-                        name: err.name,
-                        message: err.message,
-                        stack: err.stack
-                    }
-                })
-            }
-            
-        }
-    }
+   
 
     #followSteps(scenario,scenarioInfo){
         for(let step of scenario){
-           this.#validateSteps(step,scenarioInfo);
+            if(scenarioInfo.status){
+                (async()=>{
+                    try{
+                        Validator.step(step);
+                        await step.call(this.store);
+                            this.logs.push({
+                                index: step.index,
+                                meta: step.meta,
+                                storeBefore: scenarioInfo.storebefore,
+                                storeAfter: {},
+                                error: null
+                            });
+                        scenarioInfo.storebefore = this.store;
+                        scenarioInfo.status = true;
+                        scenarioInfo.currentstate +=1;
+                    }catch(err){
+                        scenarioInfo.status = false;
+                        if(typeof step === 'object' && !Array.isArray(step)){
+                            this.logs.push({
+                                index: step.index,
+                                meta: step.meta,
+                                error: {
+                                    name: err.name,
+                                    message: err.message,
+                                    stack: err.stack
+                                }
+                            })
+                        }else{
+                            this.logs.push({
+                                index: undefined,
+                                meta: undefined,
+                                error: {
+                                    name: err.name,
+                                    message: err.message,
+                                    stack: err.stack
+                                }
+                            })
+                        }
+                        // this.#rollback(scenario,scenarioInfo,scenario.indexOf(step))
+                    }
+                })(); 
+            };
+            console.log(scenarioInfo.status)
         }
     }
-   
+    #rollback(scenario,scenarioInfo,errorIndex){
+        // if(!scenarioInfo.status){
+
+        // }
+        // throw new Error('chem yles camichert')
+    }
+    
     read(){
         console.log(this.logs)
+        // console.log(this.#scenarioInfo.sortedArr)
+        // console.log(this.store)
     }
 }
 
@@ -162,7 +177,7 @@ const scenario = [
     index: 2,
     meta: {
         title: 'Delete customer',
-        description: 'This action is responsible for deleting customer'
+        description: 'This action is responsible for deleting customer',
     },
     // callback for main execution
     call: async (store) => {},
