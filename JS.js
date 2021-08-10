@@ -4,22 +4,28 @@ class Transaction {
         currentstate: 0,
         status: true,
         sortedArr: [],
-        storebefore: {},
+        storebefore: [],
+        storeafter: [],
         error: null
     };
 
     dispatch(scenario) {
         this.#validateScenario(scenario)
         this.#sortSteps(scenario,this.#scenarioInfo.sortedArr)
+        this.#createArrforstore(scenario.length,this.#scenarioInfo.storebefore,this.#scenarioInfo.storeafter)
         this.store = {};
         let self = this;
 
         return new Promise(function (resolve, reject) {
-            self.#followSteps(self.#scenarioInfo.sortedArr, self.#scenarioInfo)
-
-            resolve()
+            try{
+                self.#followSteps(self.#scenarioInfo.sortedArr, self.#scenarioInfo , self.#scenarioInfo.storebefore)
+                resolve()
+            }catch(err){
+                // this.#rollback(scenario,scenarioInfo,scenario.indexOf(step))
+                reject(err)
+                
+            }
             
-        
         });
     }
 
@@ -42,6 +48,7 @@ class Transaction {
     #sortSteps(scenario, sortArray){
         for(let i=0; i<scenario.length; i++){
             sortArray[i]='free';
+
         }
 
         for(let step of scenario){
@@ -60,25 +67,33 @@ class Transaction {
         }
     }
 
-   
+    #createArrforstore(amount,arrBefore,arrAfter){
+        for(let i=0; i<amount; i++){
+            arrBefore[i]={}
+            arrAfter[i]={}
+        }
+    }
 
-    #followSteps(scenario,scenarioInfo){
+    #followSteps(scenario,scenarioInfo, stores){
         (async()=>{
             for(let step of scenario){
                 if(scenarioInfo.status){
                     try{
+                        scenarioInfo.currentstate += 1;
                         Validator.step(step,scenario);
                         await step.call(this.store);
+                        stores[scenario.indexOf(step)] != 0 ? Object.assign(stores[scenario.indexOf(step)],stores[scenario.indexOf(step)-1]) : stores[stores.length] = {}
+                        Object.assign(stores[scenario.indexOf(step)],this.store);
                             this.logs.push({
                                 index: step.index,
                                 meta: step.meta,
-                                storeBefore: scenarioInfo.storebefore,
+                                storeBefore: stores[scenario.indexOf(step)-1] != undefined ? stores[scenario.indexOf(step)-1] : {},
                                 storeAfter: {},
                                 error: null
                             });
-                        scenarioInfo.storebefore = this.store;
+
+                        this.#putAfterStore(this.logs,scenario.indexOf(step)-1,this.store)
                         scenarioInfo.status = true;
-                        scenarioInfo.currentstate += 1;
                     }catch(err){
                         scenarioInfo.status = false;
                         if(typeof step === 'object' && !Array.isArray(step)){
@@ -102,10 +117,9 @@ class Transaction {
                                 }
                             })
                         }
-                        // this.#rollback(scenario,scenarioInfo,scenario.indexOf(step))
+                        throw this.logs
                     }
                 }else break;
-                
             }
         })(); 
     }
@@ -115,11 +129,20 @@ class Transaction {
         // }
         // throw new Error('chem yles camichert')
     }
+
+    #putAfterStore(logs ,index, store ){
+        if(index>=0){
+
+            logs[index].storeAfter=store
+            
+        }
+    }
     
     read(){
         console.log(this.logs)
-        console.log(this.#scenarioInfo.sortedArr)
+        // console.log(this.#scenarioInfo.currentstate)
         // console.log(this.store)
+        // console.log(this.#scenarioInfo.storebefore)
     }
 }
 
@@ -178,7 +201,10 @@ const scenario = [
         "This action is responsible for reading the most popular customers",
     },
     // callback for main execution
-    call: async (store) => {},
+    call: async (store) => {
+        store.Value = 1;
+        store.check = 'need check'
+    },
     // callback for rollback
     restore: async (store) => {},
   },
@@ -189,21 +215,27 @@ const scenario = [
         description: 'This action is responsible for deleting customer',
     },
     // callback for main execution
-    call: async (store) => {},
+    call: async (store) => {
+        store.Value +=1;
+        store.check = 'change'
+    },
     // callback for rollback
     restore: async (store) => {},
   },
   {
     index: 3,
     meta: {
-        title: 'Delete customer',
-        description: 'This action is responsible for deleting customer',
+        title: 'third one',
+        description: 'aeiouuu',
     },
     // callback for main execution
-    call: async (store) => {},
+    call: async (store) => {
+        store.Value +=1;
+    },
     // callback for rollback
     restore: async (store) => {},
   },
+ 
 ];
 
 const transaction = new Transaction();
