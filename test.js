@@ -7,25 +7,21 @@ async function f(){
     throw new Error('check');
 }
 
-for(let i=0; i<2; i++){
+
+
     (async () =>{
+ for(let i=0; i<2; i++){       
     try{   
-         console.log(ob.error)
+        console.log(ob.error)
         await f()
         console.log('i was here')
      }catch(e){
-         console.log('i was in catch')
+         console.log('i was in catch');
          ob.error=3;
-    console.log(e.message)
-        return 
+         console.log(ob.error);
+    console.log(e.message);
+         
         }
+}
 })();
 
-if(ob.error === 3) break;
-}
-
-
-
-       
-    
-   

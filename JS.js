@@ -63,11 +63,11 @@ class Transaction {
    
 
     #followSteps(scenario,scenarioInfo){
-        for(let step of scenario){
-            if(scenarioInfo.status){
-                (async()=>{
+        (async()=>{
+            for(let step of scenario){
+                if(scenarioInfo.status){
                     try{
-                        Validator.step(step);
+                        Validator.step(step,scenario);
                         await step.call(this.store);
                             this.logs.push({
                                 index: step.index,
@@ -78,7 +78,7 @@ class Transaction {
                             });
                         scenarioInfo.storebefore = this.store;
                         scenarioInfo.status = true;
-                        scenarioInfo.currentstate +=1;
+                        scenarioInfo.currentstate += 1;
                     }catch(err){
                         scenarioInfo.status = false;
                         if(typeof step === 'object' && !Array.isArray(step)){
@@ -104,10 +104,10 @@ class Transaction {
                         }
                         // this.#rollback(scenario,scenarioInfo,scenario.indexOf(step))
                     }
-                })(); 
-            };
-            console.log(scenarioInfo.status)
-        }
+                }else break;
+                
+            }
+        })(); 
     }
     #rollback(scenario,scenarioInfo,errorIndex){
         // if(!scenarioInfo.status){
@@ -118,7 +118,7 @@ class Transaction {
     
     read(){
         console.log(this.logs)
-        // console.log(this.#scenarioInfo.sortedArr)
+        console.log(this.#scenarioInfo.sortedArr)
         // console.log(this.store)
     }
 }
@@ -128,11 +128,12 @@ class Validator {
         if (!Array.isArray(scenario)) throw new TypeError("scenario must be an array, with Objects inside");
     }
 
-    static step(step){
+    static step(step,scenario){
         if(typeof step === 'object' && !Array.isArray(step)){
              if (step.index == undefined) throw new Error("index property is required");
                 else{
                     if(typeof step.index != 'number') throw new Error('Type of index should be number')
+                    if(scenario.indexOf(step)==0 && scenario[scenario.indexOf(step)].index != 1) throw new Error('scenario must start with index 1')
                 }
 
             if (step.call == undefined)  throw new Error("call method is required");
@@ -154,8 +155,16 @@ class Validator {
                         }
                     } 
                 }
+            if(scenario.indexOf(step) != 0){
+                if(scenario[scenario.indexOf(step)].index == scenario[scenario.indexOf(step)-1].index)throw new Error(`this step has same index as before step ${scenario.indexOf(step)}`)
+                else if(scenario[scenario.indexOf(step)].index - scenario[scenario.indexOf(step)-1].index != 1){
+                    throw new TypeError(` there is broken chain on ${scenario.indexOf(step)+1}`)
+                }
+            }
+        }else if(typeof step === undefined){
+            throw new TypeError(`this step is not object`)
         }else{
-            throw new TypeError('this step is not object')
+            throw new TypeError(` there is broken chain on ${scenario.indexOf(step)+1}`)
         }
     }
 }
@@ -175,6 +184,17 @@ const scenario = [
   },
   {
     index: 2,
+    meta: {
+        title: 'Delete customer',
+        description: 'This action is responsible for deleting customer',
+    },
+    // callback for main execution
+    call: async (store) => {},
+    // callback for rollback
+    restore: async (store) => {},
+  },
+  {
+    index: 3,
     meta: {
         title: 'Delete customer',
         description: 'This action is responsible for deleting customer',
