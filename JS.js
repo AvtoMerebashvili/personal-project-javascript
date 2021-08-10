@@ -13,9 +13,10 @@ class Transaction {
         let self = this;
 
         return new Promise(function (resolve, reject) {
+            self.#followSteps(self.#scenarioInfo.sortedArr, self.#scenarioInfo)
+
+            resolve(self.logs)
             
-            if(self.#scenarioInfo.status)resolve(self.logs)
-            else reject(self.logs)
         
         });
     }
@@ -57,16 +58,53 @@ class Transaction {
         }
     }
 
-    #findEmpty(arr){
-        for(let i=0; i<arr.length; i++){
-            if(arr[i] === undefined){
-                return i;
-            } 
+    #validateSteps(step, scenarioInfo){
+        try{
+            Validator.step(step);
+            this.logs.push({
+                index: step.index,
+                meta: step.meta,
+                storeBefore: {},
+                storeAfter: {},
+                error: null
+            })
+            scenarioInfo.status= true;
+            scenarioInfo.currentstate +=1;
+        }catch(err){
+            scenarioInfo.status = false;
+            if(typeof step === 'object' && !Array.isArray(step)){
+                this.logs.push({
+                    index: step.index,
+                    meta: step.meta,
+                    error: {
+                        name: err.name,
+                        message: err.message,
+                        stack: err.stack
+                    }
+                })
+            }else{
+                this.logs.push({
+                    index: undefined,
+                    meta: undefined,
+                    error: {
+                        name: err.name,
+                        message: err.message,
+                        stack: err.stack
+                    }
+                })
+            }
+            
         }
     }
 
+    #followSteps(scenario,scenarioInfo){
+        for(let step of scenario){
+           this.#validateSteps(step,scenarioInfo);
+        }
+    }
+   
     read(){
-        console.log(this.#scenarioInfo.sortedArr)
+        console.log(this.logs)
     }
 }
 
@@ -76,7 +114,8 @@ class Validator {
     }
 
     static step(step){
-            if (step.index == undefined) throw new Error("index property is required");
+        if(typeof step === 'object' && !Array.isArray(step)){
+             if (step.index == undefined) throw new Error("index property is required");
                 else{
                     if(typeof step.index != 'number') throw new Error('Type of index should be number')
                 }
@@ -100,7 +139,9 @@ class Validator {
                         }
                     } 
                 }
-
+        }else{
+            throw new TypeError('this step is not object')
+        }
     }
 }
 
