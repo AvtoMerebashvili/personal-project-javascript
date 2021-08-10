@@ -124,17 +124,14 @@ class Transaction {
         })(); 
     }
     #rollback(scenario,scenarioInfo,errorIndex){
-        // if(!scenarioInfo.status){
 
-        // }
-        // throw new Error('chem yles camichert')
     }
 
     #putAfterStore(logs ,index, store ){
         if(index>=0){
 
             logs[index].storeAfter=store
-            
+
         }
     }
     
