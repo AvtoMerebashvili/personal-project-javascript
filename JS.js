@@ -114,11 +114,12 @@ class Transaction {
     }
 
     async #rollback(scenario,scenarioInfo,errorIndex){
-        let copyStore = scenarioInfo.store;
+        let store=[];
+        createNewStore(store,scenarioInfo.store)
         for(let i = errorIndex; i>=0; i--){
             checkRestore(scenario[i].restore, scenario[i],this);
                 try {
-                    await scenario[i].restore(copyStore[i]);
+                    await scenario[i].restore(store[i]);
                 } catch (error) {
                     this.logs.push({
                         index: scenario[i].index,
@@ -132,7 +133,7 @@ class Transaction {
                     throw this.logs
                 }
             
-            checkStore(copyStore[i], scenarioInfo.store[i],i,this);
+            checkStore(store[i], scenarioInfo.store[i-1],i,this,store);
            }
         
         function checkRestore(restore,step,self){
@@ -172,25 +173,65 @@ class Transaction {
             }
         }
         
-        function checkStore(newStore, oldStore,index,self){
-            if(newStore === oldStore){
+        function checkStore(newStore, oldStore,index,self,store){
+            if(index === 0){
                 self.logs.push({
                     index: scenario[index].index,
                     meta: scenario[index].meta,
                     storeBefore: scenarioInfo.store[index+1],
                     storeAfter: {},
                 })
-                if(index != errorIndex) self.logs[self.logs.length-2].storeAfter = newStore
-            }else{
-                throw new Error("restore function didn't restored previus store")
+                if(index != errorIndex) self.logs[self.logs.length-2].storeAfter = store[index+1]
+            } else{
+                if(checkEquality(newStore,oldStore)){
+                    self.logs.push({
+                        index: scenario[index].index,
+                        meta: scenario[index].meta,
+                        storeBefore: scenarioInfo.store[index+1],
+                        storeAfter: {},
+                    })
+                    if(index != errorIndex) self.logs[self.logs.length-2].storeAfter = store[index+1]
+                }else{
+                    try {
+                        throw new Error("restore function didn't restored previus store")
+                    } catch (error) {
+                        self.logs.push({
+                            index: scenario[index].index,
+                            meta: scenario[index].meta,
+                            error:{
+                                name: error.name,
+                                message: error.message,
+                                stack: error.stack
+                            }
+                        })
+                        throw self.logs
+                    }
+                }
+            }
+            
+            
+        }
+
+        function createNewStore(store, oldStore){
+            for(let i in oldStore){
+                store[i] = {};
+                Object.assign(store[i],oldStore[i])
             }
         }
-       
+
+        function checkEquality(newStore,oldStore){  
+            console.log(newStore);
+            console.log(oldStore)
+            for(let key in newStore){
+                if(!(key in oldStore )) return false;
+                if(newStore[key]!==oldStore[key])return false;
+              }
+            return true;
+        }
     }
 
     read(){
         // console.log(this.logs)
-        // // // console.log(this.#scenarioInfo.currentstate)
         // // console.log(this.store)
         // console.log(this.#scenarioInfo.store)
     }
@@ -252,11 +293,12 @@ const scenario = [
     },
     // callback for main execution
     call: async (store) => {
-        store.Value = 1;
-        store.check = 'need check'
+       store.Value = 1;
     },
     // callback for rollback
-    restore: async (store) => {},
+    restore: async (store) => {
+        delete store.Value;
+    },
   },
   {
     index: 2,
@@ -267,10 +309,11 @@ const scenario = [
     // callback for main execution
     call: async (store) => {
         store.Value +=1;
-        store.check = 'change'  
     },
     // callback for rollback
-    restore: async (store) => {},
+    restore: async (store) => {
+        store.Value -=1;
+    },
   },
 
   {
@@ -282,7 +325,39 @@ const scenario = [
     // callback for main execution
     call: async (store) => {
         store.Value +=1;
-        throw new Error('ragac moxda')
+        
+    },
+    // callback for rollback
+    restore: async (store) => {
+        store.Value -=1;
+    },
+  },
+  {
+    index: 4,
+    meta: {
+        title: 'third one',
+        description: 'aeiouuu',
+    },
+    // callback for main execution
+    call: async (store) => {
+        store.Value +=1;
+        
+    },
+    // callback for rollback
+    restore: async (store) => {
+        store.Value -=1;
+    },
+  },
+  {
+    index: 5,
+    meta: {
+        title: 'third one',
+        description: 'aeiouuu',
+    },
+    // callback for main execution
+    call: async (store) => {
+        store.Value +=1;
+        // throw new Error('ragac moxda')
     },
     // callback for rollback
     restore: async (store) => {},
@@ -301,4 +376,3 @@ const transaction = new Transaction();
         console.log(err);
     }
 })();
-
