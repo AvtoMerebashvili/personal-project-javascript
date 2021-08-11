@@ -1,31 +1,18 @@
 class Transaction {
     logs = [];
     #scenarioInfo = {
-        currentstate: 0,
         status: true,
         sortedArr: [],
         store: [],
-        error: null
+        error: null,
     };
 
-    dispatch(scenario) {
+    async dispatch(scenario) {
         this.#validateScenario(scenario)
         this.#sortSteps(scenario,this.#scenarioInfo.sortedArr)
         this.#createArrforstore(scenario.length,this.#scenarioInfo.store)
         this.store = {};
-        let self = this;
-
-        return new Promise(function (resolve, reject) {
-            try{
-                self.#followSteps(self.#scenarioInfo.sortedArr, self.#scenarioInfo , self.#scenarioInfo.store)
-                resolve()
-            }catch(err){
-                // this.#rollback(scenario,scenarioInfo,scenario.indexOf(step))
-                reject(err)
-                
-            }
-            
-        });
+        await this.#followSteps(this.#scenarioInfo.sortedArr, this.#scenarioInfo , this.#scenarioInfo.store)
     }
 
     #validateScenario(scenario){
@@ -72,12 +59,10 @@ class Transaction {
         }
     }
 
-    #followSteps(scenario,scenarioInfo, stores){
-        (async()=>{
+    async #followSteps(scenario,scenarioInfo, stores){
             for(let step of scenario){
                 if(scenarioInfo.status){
                     try{
-                        scenarioInfo.currentstate += 1;
                         Validator.step(step,scenario);
                         await step.call(this.store);
                         Object.assign(stores[scenario.indexOf(step)],this.store);
@@ -88,7 +73,7 @@ class Transaction {
                                 storeAfter: {},
                                 error: null
                             });
-                        this.#setAfterAndBeforeStore(this.logs,scenario.indexOf(step),stores)    
+                        setAfterAndBeforeStore(this.logs,scenario.indexOf(step),stores)    
                         scenarioInfo.status = true;
                     }catch(err){
                         scenarioInfo.status = false;
@@ -113,27 +98,101 @@ class Transaction {
                                 }
                             })
                         }
+                      
+                        await this.#rollback(scenario,scenarioInfo,scenario.indexOf(step)-1)
+                        throw this.logs;
                     }
-                }else break;
+                }else break ;
             }
-        })(); 
-    }
-    #rollback(scenario,scenarioInfo,errorIndex){
 
+            function setAfterAndBeforeStore(logs ,index, stores){
+                if(index>0){
+                    logs[index].storeBefore=stores[index-1]
+                    logs[index-1].storeAfter=stores[index]
+                }
+            }
     }
 
-    #setAfterAndBeforeStore(logs ,index, stores ){
-        if(index>0){
-            logs[index].storeBefore=stores[index-1]
-            logs[index-1].storeAfter=stores[index]
+    async #rollback(scenario,scenarioInfo,errorIndex){
+        let copyStore = scenarioInfo.store;
+        for(let i = errorIndex; i>=0; i--){
+            checkRestore(scenario[i].restore, scenario[i],this);
+                try {
+                    await scenario[i].restore(copyStore[i]);
+                } catch (error) {
+                    this.logs.push({
+                        index: scenario[i].index,
+                        meta: scenario[i].meta,
+                        error:{
+                            name: error.name,
+                            message: error.message,
+                            stack: error.stack
+                        }
+                    })
+                    throw this.logs
+                }
+            
+            checkStore(copyStore[i], scenarioInfo.store[i],i,this);
+           }
+        
+        function checkRestore(restore,step,self){
+            if(restore){
+                if(typeof restore != 'function'){
+                    try {
+                        throw new Error("type of restore isn't function") 
+                    } catch (error) {
+                        self.logs.push({
+                            index: step.index,
+                            meta: step.meta,
+                            error: {
+                                name: error.name,
+                                message: error.message,
+                                stack: error.stack
+                            }
+                        })
+                        throw self.logs
+                    }
+                } 
+            }else{
+                try {
+                    throw new Error('there is not rollback function')
+                } catch (error) {
+                    self.logs.push({
+                        index: step.index,
+                        meta: step.meta,
+                        error: {
+                            name: error.name,
+                            message: error.message,
+                            stack: error.stack
+                        }
+                    })
+                    throw self.logs
+                }
+                
+            }
         }
+        
+        function checkStore(newStore, oldStore,index,self){
+            if(newStore === oldStore){
+                self.logs.push({
+                    index: scenario[index].index,
+                    meta: scenario[index].meta,
+                    storeBefore: scenarioInfo.store[index+1],
+                    storeAfter: {},
+                })
+                if(index != errorIndex) self.logs[self.logs.length-2].storeAfter = newStore
+            }else{
+                throw new Error("restore function didn't restored previus store")
+            }
+        }
+       
     }
-    
+
     read(){
-        console.log(this.logs)
-        // console.log(this.#scenarioInfo.currentstate)
-        // console.log(this.store)
-        console.log(this.#scenarioInfo.store)
+        // console.log(this.logs)
+        // // // console.log(this.#scenarioInfo.currentstate)
+        // // console.log(this.store)
+        // console.log(this.#scenarioInfo.store)
     }
 }
 
@@ -208,8 +267,7 @@ const scenario = [
     // callback for main execution
     call: async (store) => {
         store.Value +=1;
-        store.check = 'change'
-        
+        store.check = 'change'  
     },
     // callback for rollback
     restore: async (store) => {},
@@ -224,12 +282,11 @@ const scenario = [
     // callback for main execution
     call: async (store) => {
         store.Value +=1;
-       
+        throw new Error('ragac moxda')
     },
     // callback for rollback
     restore: async (store) => {},
   },
- 
 ];
 
 const transaction = new Transaction();
@@ -245,7 +302,3 @@ const transaction = new Transaction();
     }
 })();
 
-
-
-//this one 
-//this one
