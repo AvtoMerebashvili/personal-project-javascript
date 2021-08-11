@@ -4,21 +4,20 @@ class Transaction {
         currentstate: 0,
         status: true,
         sortedArr: [],
-        storebefore: [],
-        storeafter: [],
+        store: [],
         error: null
     };
 
     dispatch(scenario) {
         this.#validateScenario(scenario)
         this.#sortSteps(scenario,this.#scenarioInfo.sortedArr)
-        this.#createArrforstore(scenario.length,this.#scenarioInfo.storebefore,this.#scenarioInfo.storeafter)
+        this.#createArrforstore(scenario.length,this.#scenarioInfo.store)
         this.store = {};
         let self = this;
 
         return new Promise(function (resolve, reject) {
             try{
-                self.#followSteps(self.#scenarioInfo.sortedArr, self.#scenarioInfo , self.#scenarioInfo.storebefore)
+                self.#followSteps(self.#scenarioInfo.sortedArr, self.#scenarioInfo , self.#scenarioInfo.store)
                 resolve()
             }catch(err){
                 // this.#rollback(scenario,scenarioInfo,scenario.indexOf(step))
@@ -67,10 +66,9 @@ class Transaction {
         }
     }
 
-    #createArrforstore(amount,arrBefore,arrAfter){
+    #createArrforstore(amount,store){
         for(let i=0; i<amount; i++){
-            arrBefore[i]={}
-            arrAfter[i]={}
+            store[i]={}
         }
     }
 
@@ -82,17 +80,15 @@ class Transaction {
                         scenarioInfo.currentstate += 1;
                         Validator.step(step,scenario);
                         await step.call(this.store);
-                        stores[scenario.indexOf(step)] != 0 ? Object.assign(stores[scenario.indexOf(step)],stores[scenario.indexOf(step)-1]) : stores[stores.length] = {}
                         Object.assign(stores[scenario.indexOf(step)],this.store);
                             this.logs.push({
                                 index: step.index,
                                 meta: step.meta,
-                                storeBefore: stores[scenario.indexOf(step)-1] != undefined ? stores[scenario.indexOf(step)-1] : {},
+                                storeBefore: {},
                                 storeAfter: {},
                                 error: null
                             });
-
-                        this.#putAfterStore(this.logs,scenario.indexOf(step)-1,this.store)
+                        this.#setAfterAndBeforeStore(this.logs,scenario.indexOf(step),stores)    
                         scenarioInfo.status = true;
                     }catch(err){
                         scenarioInfo.status = false;
@@ -117,7 +113,6 @@ class Transaction {
                                 }
                             })
                         }
-                        throw this.logs
                     }
                 }else break;
             }
@@ -127,11 +122,10 @@ class Transaction {
 
     }
 
-    #putAfterStore(logs ,index, store ){
-        if(index>=0){
-
-            logs[index].storeAfter=store
-
+    #setAfterAndBeforeStore(logs ,index, stores ){
+        if(index>0){
+            logs[index].storeBefore=stores[index-1]
+            logs[index-1].storeAfter=stores[index]
         }
     }
     
@@ -139,7 +133,7 @@ class Transaction {
         console.log(this.logs)
         // console.log(this.#scenarioInfo.currentstate)
         // console.log(this.store)
-        // console.log(this.#scenarioInfo.storebefore)
+        console.log(this.#scenarioInfo.store)
     }
 }
 
@@ -215,10 +209,12 @@ const scenario = [
     call: async (store) => {
         store.Value +=1;
         store.check = 'change'
+        
     },
     // callback for rollback
     restore: async (store) => {},
   },
+
   {
     index: 3,
     meta: {
@@ -228,6 +224,7 @@ const scenario = [
     // callback for main execution
     call: async (store) => {
         store.Value +=1;
+       
     },
     // callback for rollback
     restore: async (store) => {},
@@ -247,3 +244,8 @@ const transaction = new Transaction();
         console.log(err);
     }
 })();
+
+
+
+//this one 
+//this one
