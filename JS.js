@@ -60,13 +60,33 @@ class Transaction {
     
     }
 
+    #deepCopy(obj1,obj2){
+        for(let property in obj1){
+            if(obj1[property] instanceof Map){
+                obj2[property] = new Map([...obj1[property]]);
+            }else if(obj1[property] instanceof Set){
+                obj2[property] = new Set([...obj1[property]])
+            }
+            else if(typeof obj1[property] == 'object' && !(Array.isArray(obj1[property]))  && obj1[property] != null){
+                obj2[property] = {}
+                this.#deepCopy(obj1[property],obj2[property])
+            }else if(Array.isArray(obj1[property])){
+                obj2[property] = []
+                this.#deepCopy(obj1[property],obj2[property])
+            }else{
+                obj2[property] = obj1[property]
+            }
+        }
+    }
+
     async #followSteps(scenario,scenarioInfo, stores){
             for(let step of scenario){
                 if(scenarioInfo.status){
                     try{
                         Validator.step(step,scenario);
                         await step.call(this.store);
-                        Object.assign(stores[scenario.indexOf(step)+1],this.store);
+                        this.#deepCopy(this.store,stores[scenario.indexOf(step)+1]);
+                        // Object.assign(stores[scenario.indexOf(step)+1],this.store)
                             this.logs.push({
                                 index: step.index,
                                 meta: step.meta,
@@ -109,7 +129,7 @@ class Transaction {
 
     async #rollback(scenario,scenarioInfo,errorIndex){
         let store=[];
-        createNewStore(store,scenarioInfo.store)
+        createNewStore(store,scenarioInfo.store,this)
         for(let i = errorIndex; i>=0; i--){
             checkRestore(scenario[i].restore, scenario[i],this);
                 try {
@@ -193,10 +213,11 @@ class Transaction {
             }                
         }
 
-        function createNewStore(store, oldStore){
+        function createNewStore(store, oldStore,self){
             for(let i in oldStore){
                 store[i] = {};
-                Object.assign(store[i],oldStore[i])
+                self.#deepCopy(oldStore[i],store[i])
+                // Object.assign(store[i],oldStore[i])
             }
         }
 
@@ -239,9 +260,7 @@ class Transaction {
     }
 
     read(){
-        console.log(this.logs)
-        // // console.log(this.store)
-        console.log(this.#scenarioInfo.store)
+        // console.log(this.logs)
     }
 }
 
@@ -252,41 +271,41 @@ class Validator {
 
     static step(step,scenario){
         if(typeof step === 'object' && !Array.isArray(step)){
-             if (step.index == undefined) throw new Error("index property is required");
+             if (step.index == undefined) throw new Error("There isn't index property");
                 else{
-                    if(typeof step.index != 'number') throw new Error('Type of index should be number')
-                    if(scenario.indexOf(step)==0 && scenario[scenario.indexOf(step)].index != 1) throw new Error('scenario must start with index 1')
+                    if(typeof step.index != 'number') throw new Error('Type of index is not a number')
+                    if(scenario.indexOf(step)==0 && scenario[scenario.indexOf(step)].index != 1) throw new Error('there is not index 1 in steps')
                 }
 
-            if (step.call == undefined)  throw new Error("call method is required");
+            if (step.call == undefined)  throw new Error("there is not call method");
                 else{
-                    if(typeof step.call != 'function') throw new TypeError('type of call must be function')
+                    if(typeof step.call != 'function') throw new TypeError('type of call is not function')
                 }
 
-            if (step.meta == undefined)  throw new Error("meta property is required");
+            if (step.meta == undefined)  throw new Error("there is not meta property");
                 else if (step.meta != undefined){
-                    if(typeof step.meta != 'object' || Array.isArray(step.meta)) throw new TypeError('type of meta must be object')
+                    if(typeof step.meta != 'object' || Array.isArray(step.meta)) throw new TypeError('type of meta is not object')
                     else{
-                        if (step.meta.title == undefined) throw new Error("title is required");
+                        if (step.meta.title == undefined) throw new Error("there is not title");
                         else{
-                            if(typeof step.meta.title != 'string') throw new TypeError('type of title must be string')
+                            if(typeof step.meta.title != 'string') throw new TypeError('type of title is not string')
                         }
-                        if(step.meta.description == undefined)  throw new Error("description is required");
+                        if(step.meta.description == undefined)  throw new Error("there is not description");
                         else{
-                            if(typeof step.meta.description != 'string') throw new TypeError('description of title must be string')
+                            if(typeof step.meta.description != 'string') throw new TypeError('description of title is not string')
                         }
                     } 
                 }
             if(scenario.indexOf(step) != 0){
                 if(scenario[scenario.indexOf(step)].index == scenario[scenario.indexOf(step)-1].index)throw new Error(`this step has same index as before step ${scenario.indexOf(step)}`)
                 else if(scenario[scenario.indexOf(step)].index - scenario[scenario.indexOf(step)-1].index != 1){
-                    throw new TypeError(` there is broken chain on ${scenario.indexOf(step)+1}`)
+                    throw new TypeError(`there is broken chain on ${scenario.indexOf(step)+1}`)
                 }
             }
         }else if(typeof step === undefined){
             throw new TypeError(`this step is not object`)
         }else{
-            throw new TypeError(` there is broken chain on ${scenario.indexOf(step)+1}`)
+            throw new TypeError(`there is broken chain on ${scenario.indexOf(step)+1}`)
         }
     }
 }
@@ -301,11 +320,11 @@ const scenario = [
     },
     // callback for main execution
     call: async (store) => {
-       store.Value = 1;
+        store.value = 1 
     },
     // callback for rollback
     restore: async (store) => {
-        delete store.Value;
+        delete store.value;
     },
   },
   {
@@ -315,17 +334,9 @@ const scenario = [
         description: 'This action is responsible for deleting customer',
     },
     // callback for main execution
-    call: async (store) => {
-        store.Value +=1;
-        store.person = {
-            name: 'nukri'
-        }
-    },
+    call: async (store) => {store.value += 10},
     // callback for rollback
-    restore: async (store) => {
-        store.Value -=1;
-        delete store.person
-    },
+    restore: async (store) => {store.value -= 10},
   },
 
   {
@@ -336,13 +347,16 @@ const scenario = [
     },
     // callback for main execution
     call: async (store) => {
-        store.Value +=1;
-        store.person.name = 'lado' 
+        store.value += 10
+        store.person = {
+            name: 'anita',
+            surname: 'head'
+        }
     },
     // callback for rollback
     restore: async (store) => {
-        store.Value -=1;
-        // store.person.name = 'nukri'
+        store.value -= 10
+        delete store.person
     },
   },
   {
@@ -353,12 +367,17 @@ const scenario = [
     },
     // callback for main execution
     call: async (store) => {
-        store.Value +=1;
-        
+        store.person = {
+            name: 'Berry',
+            surname: 'McCaulkiner'
+        }
     },
     // callback for rollback
     restore: async (store) => {
-        store.Value -=1;
+        store.person = {
+            name: 'anita',
+            surname: 'head'
+        }
     },
   },
   {
@@ -368,10 +387,7 @@ const scenario = [
         description: 'aeiouuu',
     },
     // callback for main execution
-    call: async (store) => {
-        store.Value +=1;
-        throw new Error('ragac moxda')
-    },
+    call: async (store) => {throw new Error('check')},
     // callback for rollback
     restore: async (store) => {},
   },
@@ -384,7 +400,7 @@ const transaction = new Transaction();
         await transaction.dispatch(scenario);
         const store = transaction.store; // {} | null
         const logs = transaction.logs; // []    
-        transaction.read()
+        // transaction.read()
     } catch (err) {
         console.log(err);
     }

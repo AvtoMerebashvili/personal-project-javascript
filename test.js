@@ -41,22 +41,12 @@ const o1 = {
     value:1,
     person:{
         name:'avtss',
-        f:{
-            vardi: 'sxlak',
-            wkap: [1,2,3,{s:2}],
-        }
+       
     },
-    name: 'first objoect',
-    surname: map,
-    wide: new Set([1,2,3,4,5,6,1,2,3,4,5,6])
+    
     
 }
 const o2 = {}
-
-for(let i of map){
-    console.log(i)
-    console.log(typeof i)
-}
 
 
 function deepCopy(obj1,obj2){
@@ -86,8 +76,7 @@ deepCopy(o1,o2);
 o2.value = 2
 o2.name = 'second objoect'
 o2.person.name = 'xvicha'
-o2.person.f.vardi = 'gaxma'
-o2.person.f.wkap[3].s = 90
+
 console.log(o1)
 console.log(o2)
 
