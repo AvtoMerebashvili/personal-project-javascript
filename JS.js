@@ -173,6 +173,7 @@ class Transaction {
                     meta: scenario[index].meta,
                     storeBefore: scenarioInfo.store[index+1],
                     storeAfter: newStore,
+                    error: null
                 })
             }else{
                 try {
@@ -200,11 +201,40 @@ class Transaction {
         }
 
         function checkEquality(newStore,oldStore){  
-            for(let key in newStore){
-                if(!(key in oldStore )) return false;
-                if(newStore[key]!==oldStore[key])return false;
-              }
-            return true;
+            let check = true;
+            (function recursion(newStore,oldStore){
+                for(let key in newStore){
+                    if(typeof newStore[key] == 'object'){
+                        recursion(newStore[key], oldStore[key])
+                    }else{
+                        if(oldStore != undefined){
+                            if(!(key in oldStore )) check = false;
+                            if(newStore[key]!==oldStore[key])check = false; 
+                        }else check = false
+                        
+                    }
+                }
+            }
+            )(newStore,oldStore);
+        
+            if(!check) return check;
+        
+            (function recursion(newStore,oldStore){
+                for(let key in oldStore){
+                    if(typeof oldStore[key] == 'object'){
+                        recursion(newStore[key], oldStore[key])
+                    }else{
+                        if(newStore != undefined){
+                            if(!(key in newStore )) check = false;
+                            if(newStore[key]!==oldStore[key])check = false; 
+                        }else check = false
+                        
+                    }
+                }
+            }
+            )(newStore,oldStore);
+            
+            return check;
         }
     }
 
@@ -287,10 +317,14 @@ const scenario = [
     // callback for main execution
     call: async (store) => {
         store.Value +=1;
+        store.person = {
+            name: 'nukri'
+        }
     },
     // callback for rollback
     restore: async (store) => {
         store.Value -=1;
+        delete store.person
     },
   },
 
@@ -303,12 +337,12 @@ const scenario = [
     // callback for main execution
     call: async (store) => {
         store.Value +=1;
-      
+        store.person.name = 'lado' 
     },
     // callback for rollback
     restore: async (store) => {
         store.Value -=1;
-        
+        // store.person.name = 'nukri'
     },
   },
   {
