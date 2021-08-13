@@ -129,11 +129,21 @@ class Transaction {
 
     async #rollback(scenario,scenarioInfo,errorIndex){
         let store=[];
+        let restoreSkip = 0;
+        console.log(scenarioInfo.store)
         createNewStore(store,scenarioInfo.store,this)
+        console.log(store)
         for(let i = errorIndex; i>=0; i--){
-            checkRestore(scenario[i].restore, scenario[i],this);
-                try {
+            
+            if(!(checkRestore(scenario[i].restore, scenario[i],this))){
+                    restoreSkip +=1;
+                    Object.assign(store[i],store[i+1]);
+                    continue;
+                }try {
+                  
                     await scenario[i].restore(store[i+1]);
+                    
+
                 } catch (error) {
                     this.logs.push({
                         index: scenario[i].index,
@@ -146,7 +156,7 @@ class Transaction {
                     })
                     throw this.logs
                 }
-            checkStore(store[i+1], scenarioInfo.store[i],i,this,store);
+            PutStepInLog(store,i,this,restoreSkip);
            }
         
         function checkRestore(restore,step,self){
@@ -166,97 +176,30 @@ class Transaction {
                         })
                         throw self.logs
                     }
-                } 
-            }else{
-                try {
-                    throw new Error('there is not rollback function')
-                } catch (error) {
-                    self.logs.push({
-                        index: step.index,
-                        meta: step.meta,
-                        error: {
-                            name: error.name,
-                            message: error.message,
-                            stack: error.stack
-                        }
-                    })
-                    throw self.logs
                 }
-                
+                return true
+            }else{
+                return false
             }
         }
         
-        function checkStore(newStore, oldStore,index,self,store){
-            if(checkEquality(newStore,oldStore)){
+        function PutStepInLog(store,index,self,skip){
                 self.logs.push({
                     index: scenario[index].index,
                     meta: scenario[index].meta,
-                    storeBefore: scenarioInfo.store[index+1],
-                    storeAfter: newStore,
+                    storeBefore: scenarioInfo.store[index+1+skip],
+                    storeAfter: store[index+1],
                     error: null
-                })
-            }else{
-                try {
-                    throw new Error("restore function didn't restored previus store")
-                } catch (error) {
-                    self.logs.push({
-                        index: scenario[index].index,
-                        meta: scenario[index].meta,
-                        error:{
-                            name: error.name,
-                            message: error.message,
-                            stack: error.stack
-                        }
-                    })
-                    throw self.logs
-                }
-            }                
+                })  
         }
 
         function createNewStore(store, oldStore,self){
             for(let i in oldStore){
                 store[i] = {};
                 self.#deepCopy(oldStore[i],store[i])
-                // Object.assign(store[i],oldStore[i])
             }
         }
 
-        function checkEquality(newStore,oldStore){  
-            let check = true;
-            (function recursion(newStore,oldStore){
-                for(let key in newStore){
-                    if(typeof newStore[key] == 'object'){
-                        recursion(newStore[key], oldStore[key])
-                    }else{
-                        if(oldStore != undefined){
-                            if(!(key in oldStore )) check = false;
-                            if(newStore[key]!==oldStore[key])check = false; 
-                        }else check = false
-                        
-                    }
-                }
-            }
-            )(newStore,oldStore);
-        
-            if(!check) return check;
-        
-            (function recursion(newStore,oldStore){
-                for(let key in oldStore){
-                    if(typeof oldStore[key] == 'object'){
-                        recursion(newStore[key], oldStore[key])
-                    }else{
-                        if(newStore != undefined){
-                            if(!(key in newStore )) check = false;
-                            if(newStore[key]!==oldStore[key])check = false; 
-                        }else check = false
-                        
-                    }
-                }
-            }
-            )(newStore,oldStore);
-            
-            return check;
-        }
     }
 
 }
@@ -331,9 +274,9 @@ const scenario = [
         description: 'This action is responsible for deleting customer',
     },
     // callback for main execution
-    call: async (store) => {store.value += 10},
+    call: async (store) => {store.value += 1},
     // callback for rollback
-    restore: async (store) => {store.value -= 10},
+    restore: async (store) => {store.value -= 1},
   },
 
   {
@@ -344,16 +287,12 @@ const scenario = [
     },
     // callback for main execution
     call: async (store) => {
-        store.value += 10
-        store.person = {
-            name: 'anita',
-            surname: 'head'
-        }
+        store.value += 1
     },
     // callback for rollback
     restore: async (store) => {
-        store.value -= 10
-        delete store.person
+        store.value -= 1
+        
     },
   },
   {
@@ -364,18 +303,12 @@ const scenario = [
     },
     // callback for main execution
     call: async (store) => {
-        store.person = {
-            name: 'Berry',
-            surname: 'McCaulkiner'
-        }
+        store.value += 1
     },
     // callback for rollback
-    restore: async (store) => {
-        store.person = {
-            name: 'anita',
-            surname: 'head'
-        }
-    },
+    // restore: async (store) => {
+    //     store.value -= 1
+    // },
   },
   {
     index: 5,
