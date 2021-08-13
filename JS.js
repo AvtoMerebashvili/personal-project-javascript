@@ -259,9 +259,6 @@ class Transaction {
         }
     }
 
-    read(){
-        // console.log(this.logs)
-    }
 }
 
 class Validator {
@@ -400,7 +397,6 @@ const transaction = new Transaction();
         await transaction.dispatch(scenario);
         const store = transaction.store; // {} | null
         const logs = transaction.logs; // []    
-        // transaction.read()
     } catch (err) {
         console.log(err);
     }
