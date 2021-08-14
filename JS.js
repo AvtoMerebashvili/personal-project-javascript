@@ -138,11 +138,13 @@ class Transaction {
             if(!(checkRestore(scenario[i].restore, scenario[i],this))){
                     restoreSkip +=1;
                     Object.assign(store[i],store[i+1]);
+                    
                     continue;
                 }try {
                   
                     await scenario[i].restore(store[i+1]);
-                    
+                    Object.assign(store[i],store[i+1])
+                    console.log(i)
 
                 } catch (error) {
                     this.logs.push({
@@ -276,7 +278,9 @@ const scenario = [
     // callback for main execution
     call: async (store) => {store.value += 1},
     // callback for rollback
-    restore: async (store) => {store.value -= 1},
+    restore: async (store) => {
+        store.value -= 1
+    },
   },
 
   {
@@ -291,7 +295,9 @@ const scenario = [
     },
     // callback for rollback
     restore: async (store) => {
+        console.log(store.value)
         store.value -= 1
+        console.log(store.value)
         
     },
   },
