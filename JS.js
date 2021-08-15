@@ -130,9 +130,7 @@ class Transaction {
     async #rollback(scenario,scenarioInfo,errorIndex){
         let store=[];
         let restoreSkip = 0;
-        console.log(scenarioInfo.store)
         createNewStore(store,scenarioInfo.store,this)
-        console.log(store)
         for(let i = errorIndex; i>=0; i--){
             
             if(!(checkRestore(scenario[i].restore, scenario[i],this))){
@@ -144,8 +142,6 @@ class Transaction {
                   
                     await scenario[i].restore(store[i+1]);
                     Object.assign(store[i],store[i+1])
-                    console.log(i)
-
                 } catch (error) {
                     this.logs.push({
                         index: scenario[i].index,
@@ -295,10 +291,7 @@ const scenario = [
     },
     // callback for rollback
     restore: async (store) => {
-        console.log(store.value)
         store.value -= 1
-        console.log(store.value)
-        
     },
   },
   {
