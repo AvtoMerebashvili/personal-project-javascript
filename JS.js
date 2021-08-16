@@ -86,7 +86,6 @@ class Transaction {
                         Validator.step(step,scenario);
                         await step.call(this.store);
                         this.#deepCopy(this.store,stores[scenario.indexOf(step)+1]);
-                        // Object.assign(stores[scenario.indexOf(step)+1],this.store)
                             this.logs.push({
                                 index: step.index,
                                 meta: step.meta,
@@ -257,13 +256,9 @@ const scenario = [
         "This action is responsible for reading the most popular customers",
     },
     // callback for main execution
-    call: async (store) => {
-        store.value = 1 
-    },
+    call: async (store) => {},
     // callback for rollback
-    restore: async (store) => {
-        delete store.value;
-    },
+    restore: async (store) => {},
   },
   {
     index: 2,
@@ -272,51 +267,7 @@ const scenario = [
         description: 'This action is responsible for deleting customer',
     },
     // callback for main execution
-    call: async (store) => {store.value += 1},
-    // callback for rollback
-    restore: async (store) => {
-        store.value -= 1
-    },
-  },
-
-  {
-    index: 3,
-    meta: {
-        title: 'third one',
-        description: 'aeiouuu',
-    },
-    // callback for main execution
-    call: async (store) => {
-        store.value += 1
-    },
-    // callback for rollback
-    restore: async (store) => {
-        store.value -= 1
-    },
-  },
-  {
-    index: 4,
-    meta: {
-        title: 'third one',
-        description: 'aeiouuu',
-    },
-    // callback for main execution
-    call: async (store) => {
-        store.value += 1
-    },
-    // callback for rollback
-    // restore: async (store) => {
-    //     store.value -= 1
-    // },
-  },
-  {
-    index: 5,
-    meta: {
-        title: 'third one',
-        description: 'aeiouuu',
-    },
-    // callback for main execution
-    call: async (store) => {throw new Error('check')},
+    call: async (store) => {},
     // callback for rollback
     restore: async (store) => {},
   },
