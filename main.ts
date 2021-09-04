@@ -1,9 +1,8 @@
 import {Transaction} from './index'
 
-
-const scenario:object[] = [
+const scenario = [
   {
-    index: 1,
+    index: 2,
     meta: {
       title: "Read popular customers",
       description:
@@ -15,7 +14,7 @@ const scenario:object[] = [
     restore: async (store) => {},
   },
   {
-    index: 2,
+    index: '2',
     meta: {
         title: 'Delete customer',
         description: 'This action is responsible for deleting customer',

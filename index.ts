@@ -1,26 +1,29 @@
 import {Validator} from './validation'
-export class Transaction {
-    logs = [];
-    #scenarioInfo = {
+import {transaction} from './validation'
+import { step } from './validation';
+import {scenarioinfo} from './validation'
+
+export class Transaction implements transaction {
+    logs:object[] = [];
+    private scenarioInfo:scenarioinfo = {
         status: true,
         sortedArr: [],
         store: [],
         error: null,
     };
-
-    async dispatch(scenario) {
-        
-        this.#sortSteps(scenario,this.#scenarioInfo.sortedArr)
-        this.#createArrforstore(scenario.length,this.#scenarioInfo.store)
-        Object.defineProperty(this, "store",{value: {}})
-        await this.#followSteps(this.#scenarioInfo.sortedArr, this.#scenarioInfo , this.#scenarioInfo.store)
+    
+    async dispatch(scenario:step[]) {
+        this.sortSteps(scenario,this.scenarioInfo.sortedArr)
+        this.createArrforstore(scenario.length,this.scenarioInfo.store)
+        Object.defineProperty(this, "store", {value: {}})
+        this.store = {}
+        await this.followSteps(this.scenarioInfo.sortedArr, this.scenarioInfo , this.scenarioInfo.store)
     }
 
 
-    #sortSteps(scenario, sortArray){
+    private sortSteps(scenario, sortArray){
         for(let i=0; i<scenario.length; i++){
             sortArray[i]='free';
-
         }
 
         for(let step of scenario){
@@ -39,14 +42,13 @@ export class Transaction {
         }
     }
 
-    #createArrforstore(amount,store){
+    private createArrforstore(amount,store){
         for(let i=0; i<=amount; i++){
             store[i]={}
         }
-    
     }
 
-    #deepCopy(obj1,obj2){
+    private deepCopy(obj1,obj2){
         for(let property in obj1){
             if(obj1[property] instanceof Map){
                 obj2[property] = new Map([...obj1[property]]);
@@ -55,23 +57,23 @@ export class Transaction {
             }
             else if(typeof obj1[property] == 'object' && !(Array.isArray(obj1[property]))  && obj1[property] != null){
                 obj2[property] = {}
-                this.#deepCopy(obj1[property],obj2[property])
+                this.deepCopy(obj1[property],obj2[property])
             }else if(Array.isArray(obj1[property])){
                 obj2[property] = []
-                this.#deepCopy(obj1[property],obj2[property])
+                this.deepCopy(obj1[property],obj2[property])
             }else{
                 obj2[property] = obj1[property]
             }
         }
     }
 
-    async #followSteps(scenario,scenarioInfo, stores){
+    private async followSteps(scenario,scenarioInfo, stores){
             for(let step of scenario){
                 if(scenarioInfo.status){
                     try{
                         Validator.step(step,scenario);
                         await step.call(this.store);
-                        this.#deepCopy(this.store,stores[scenario.indexOf(step)+1]);
+                        this.deepCopy(this.store,stores[scenario.indexOf(step)+1]);
                             this.logs.push({
                                 index: step.index,
                                 meta: step.meta,
@@ -108,14 +110,14 @@ export class Transaction {
                             })
                         }
                       
-                        await this.#rollback(scenario,scenarioInfo,scenario.indexOf(step)-1)
+                        await this.rollback(scenario,scenarioInfo,scenario.indexOf(step)-1)
                         throw this.logs;
                     }
                 }else break ;
             }
     }
 
-    async #rollback(scenario,scenarioInfo,errorIndex){
+    private async rollback(scenario,scenarioInfo,errorIndex){
         let store=[];
         let restoreSkip = 0;
         createNewStore(store,scenarioInfo.store,this)
@@ -182,7 +184,7 @@ export class Transaction {
         function createNewStore(store, oldStore,self){
             for(let i in oldStore){
                 store[i] = {};
-                self.#deepCopy(oldStore[i],store[i])
+                self.deepCopy(oldStore[i],store[i])
             }
         }
     }
