@@ -1,6 +1,6 @@
 import {Validator} from './validation'
 import {transaction} from './validation'
-import { step } from './validation';
+import { step } from './validation'
 import {scenarioinfo} from './validation'
 
 export class Transaction implements transaction {
@@ -16,10 +16,8 @@ export class Transaction implements transaction {
         this.sortSteps(scenario,this.scenarioInfo.sortedArr)
         this.createArrforstore(scenario.length,this.scenarioInfo.store)
         Object.defineProperty(this, "store", {value: {}})
-        this.store = {}
         await this.followSteps(this.scenarioInfo.sortedArr, this.scenarioInfo , this.scenarioInfo.store)
     }
-
 
     private sortSteps(scenario, sortArray){
         for(let i=0; i<scenario.length; i++){
@@ -72,8 +70,8 @@ export class Transaction implements transaction {
                 if(scenarioInfo.status){
                     try{
                         Validator.step(step,scenario);
-                        await step.call(this.store);
-                        this.deepCopy(this.store,stores[scenario.indexOf(step)+1]);
+                        await step.call(this['store']);
+                        this.deepCopy(this['store'],stores[scenario.indexOf(step)+1]);
                             this.logs.push({
                                 index: step.index,
                                 meta: step.meta,
@@ -84,7 +82,7 @@ export class Transaction implements transaction {
                         scenarioInfo.status = true;
                         if(scenario.indexOf(step) == scenario.length-1){
                             this.logs = [];
-                            this.store = {}
+                            this['store'] = {}
                         }
                     }catch(err){
                         scenarioInfo.status = false;
