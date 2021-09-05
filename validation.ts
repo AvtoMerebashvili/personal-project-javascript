@@ -1,4 +1,5 @@
 export type obj = {}
+export type restore = (param: any)=> Promise<any>
 
 interface meta{
     title:string;
@@ -11,7 +12,7 @@ interface error{
     stack: string | undefined
 }
 
-export interface log<>{
+export interface log{
     index: number | undefined,
     meta: meta | undefined,
     storeBefore?: obj,
@@ -38,6 +39,7 @@ export interface transaction{
         dispatch(param:step[]): Promise<any>;
         store: any[];
     }
+    
 enum Errors {
     noIndexOne = 'there is not index 1 in steps',
     indexReincarnation = "this step has same index as before step",
@@ -46,9 +48,7 @@ enum Errors {
 
 export class Validator {
     static step(step: step,scenario:any[]){
-     
         if(scenario.indexOf(step)==0 && scenario[scenario.indexOf(step)].index != 1) throw new Error(Errors.noIndexOne)
-                
         if(scenario.indexOf(step) != 0){
                 if(scenario[scenario.indexOf(step)].index - scenario[scenario.indexOf(step)-1].index != 1){
                     throw new TypeError(`${Errors.brokenChain} ${scenario.indexOf(step)+1} or ${Errors.indexReincarnation}`)

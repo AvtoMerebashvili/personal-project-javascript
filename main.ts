@@ -9,9 +9,9 @@ const scenario = [
         "This action is responsible for reading the most popular customers",
     },
     // callback for main execution
-    call: async (store) => {},
+    call: async (store:object) => {},
     // callback for rollbacke
-    restore: async (store) => {},
+    restore: async (store:object) => {},
   },
   {
     index: 2,
@@ -20,9 +20,9 @@ const scenario = [
         description: 'This action is responsible for deleting customer',
     },
     // callback for main execution
-    call: async (store) => {throw new Error("sds")},
+    call: async (store:object) => {},
     // callback for rollback
-    restore: async (store) => {},
+    restore: async (store:object) => {},
   },
 ];
 
