@@ -7,7 +7,7 @@ interface meta{
 
 export interface scenarioinfo{
     status: boolean,
-    sortedArr: arrOfObjects,
+    sortedArr: step[],
     store: arrOfObjects,
     error: null,
 }
@@ -21,9 +21,10 @@ export interface step{
 
 export interface transaction{
         logs:arrOfObjects;
-        dispatch(param:step[]): void;
-        store?:object;
+        dispatch(param:step[]):void;
+        store?: any[];
     }
+
 
 export class Validator {
     static step(step,scenario){

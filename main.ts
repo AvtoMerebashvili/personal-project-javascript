@@ -14,7 +14,7 @@ const scenario = [
     restore: async (store) => {},
   },
   {
-    index: '2',
+    index: 2,
     meta: {
         title: 'Delete customer',
         description: 'This action is responsible for deleting customer',
@@ -31,7 +31,7 @@ const transaction = new Transaction();
 (async () => {
     try {
         await transaction.dispatch(scenario);
-        const store = transaction.store; // {} | null
+        const store = transaction['store']; // {} | null
         const logs = transaction.logs; // []  
     } catch (err) {
         console.log(err);

@@ -15,38 +15,38 @@ export class Transaction implements transaction {
     async dispatch(scenario:step[]) {
         this.sortSteps(scenario,this.scenarioInfo.sortedArr)
         this.createArrforstore(scenario.length,this.scenarioInfo.store)
-        Object.defineProperty(this, "store", {value: {}})
+        Object.defineProperty(this, "store", {value: <object | any[]>{}})
         await this.followSteps(this.scenarioInfo.sortedArr, this.scenarioInfo , this.scenarioInfo.store)
     }
 
-    private sortSteps(scenario, sortArray){
+    private sortSteps(scenario:step[], sortArray: object[]): void{
         for(let i=0; i<scenario.length; i++){
-            sortArray[i]='free';
+            sortArray[i]= {};
         }
 
         for(let step of scenario){
             if(step.index){
-                if(sortArray[step.index-1]!='free'){
+                if(sortArray[step.index-1]!={}){
                     findfreespace(sortArray,step,sortArray[step.index-1])
                 }else sortArray[step.index-1] = step;
             }
             else{
-                sortArray[sortArray.indexOf('free')]=step;
+                sortArray[sortArray.indexOf({})]=step;
             }
         }
-        function findfreespace(sortArray,newitem,olditem){
+        function findfreespace(sortArray:object[],newitem:step,olditem:object):void{
             sortArray[newitem.index-1] = newitem;
-            sortArray[sortArray.indexOf('free')]=olditem;
+            sortArray[sortArray.indexOf({})]=olditem;
         }
     }
 
-    private createArrforstore(amount,store){
+    private createArrforstore(amount:number,store:object): void{
         for(let i=0; i<=amount; i++){
             store[i]={}
         }
     }
 
-    private deepCopy(obj1,obj2){
+    private deepCopy(obj1:object ,obj2: object){
         for(let property in obj1){
             if(obj1[property] instanceof Map){
                 obj2[property] = new Map([...obj1[property]]);
@@ -65,12 +65,11 @@ export class Transaction implements transaction {
         }
     }
 
-    private async followSteps(scenario,scenarioInfo, stores){
+    private async followSteps(scenario:step[],scenarioInfo:scenarioinfo, stores:object[]){
             for(let step of scenario){
                 if(scenarioInfo.status){
                     try{
-                        Validator.step(step,scenario);
-                        await step.call(this['store']);
+                        step.call(this['store']);
                         this.deepCopy(this['store'],stores[scenario.indexOf(step)+1]);
                             this.logs.push({
                                 index: step.index,
@@ -124,7 +123,6 @@ export class Transaction implements transaction {
             if(!(checkRestore(scenario[i].restore, scenario[i],this))){
                     restoreSkip +=1;
                     Object.assign(store[i],store[i+1]);
-                    
                     continue;
                 }try {
                   
