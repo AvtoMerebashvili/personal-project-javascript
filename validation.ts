@@ -1,4 +1,4 @@
-type obj = {}
+export type obj = {}
 
 interface meta{
     title:string;
@@ -11,7 +11,7 @@ interface error{
     stack: string | undefined
 }
 
-export interface log{
+export interface log<>{
     index: number | undefined,
     meta: meta | undefined,
     storeBefore?: obj,
@@ -29,13 +29,13 @@ export interface scenarioinfo{
 export interface step{
     index:number;
     meta: meta;
-    call(param:object):void;
-    restore?(param:object):void;
+    call(param:object): Promise<any>;
+    restore?(param:object):Promise<any>;
 }
 
 export interface transaction{
         logs: log[];
-        dispatch(param:step[]): Promise<obj | any[]>;
+        dispatch(param:step[]): Promise<any>;
         store: any[];
     }
 enum Errors {

@@ -1,4 +1,4 @@
-import {transaction, step, scenarioinfo, log, Validator} from './validation'
+import {transaction, step, scenarioinfo, log, Validator, obj} from './validation'
 
 export class Transaction implements transaction {
     logs = <log[]>[];
@@ -16,7 +16,7 @@ export class Transaction implements transaction {
         await this.followSteps(this.scenarioInfo.sortedArr, this.scenarioInfo , this.scenarioInfo.store)
     }
 
-    private sortSteps(scenario:step[], sortArray: object[]): void{
+    private sortSteps(scenario:step[], sortArray: obj[]): void{
         for(let i=0; i<scenario.length; i++){
             sortArray[i]= {};
         }
@@ -31,13 +31,13 @@ export class Transaction implements transaction {
                 sortArray[sortArray.indexOf({})]=step;
             }
         }
-        function findfreespace(sortArray:object[],newitem:step,olditem:object):void{
+        function findfreespace(sortArray:obj[],newitem:step,olditem:obj):void{
             sortArray[newitem.index-1] = newitem;
             sortArray[sortArray.indexOf({})]=olditem;
         }
     }
 
-    private createArrforstore(amount:number,store:any): void{
+    private createArrforstore(amount:number,store:obj[]): void{
         for(let i=0; i<=amount; i++){
             store[i]={}
         }
@@ -62,7 +62,7 @@ export class Transaction implements transaction {
         }
     }
 
-    private async followSteps(scenario:any[],scenarioInfo:scenarioinfo, stores:any[]): Promise<any>{
+    private async followSteps(scenario:step[],scenarioInfo:scenarioinfo, stores:obj[]): Promise<any>{
             for(let step of scenario){
                 if(scenarioInfo.status){
                     try{
@@ -70,7 +70,7 @@ export class Transaction implements transaction {
                         await step.call(this['store']);
                         this.deepCopy(this['store'],stores[scenario.indexOf(step)+1]);
                             this.logs.push({
-                                index: <number>step.index,
+                                index: step.index,
                                 meta: step.meta,
                                 storeBefore: stores[scenario.indexOf(step)],
                                 storeAfter: stores[scenario.indexOf(step)+1],
@@ -112,9 +112,9 @@ export class Transaction implements transaction {
             }
     }
 
-    private async rollback(scenario:any,scenarioInfo:any,errorIndex:any): Promise<any>{
-        let store = <object[]>[];
-        let restoreSkip = 0;
+    private async rollback(scenario:any[],scenarioInfo:scenarioinfo,errorIndex:number): Promise<any>{
+        let store = <obj[]>[];
+        let restoreSkip:number = 0;
         createNewStore(store,scenarioInfo.store,this)
         for(let i = errorIndex; i>=0; i--){
             
@@ -123,7 +123,6 @@ export class Transaction implements transaction {
                     Object.assign(store[i],store[i+1]);
                     continue;
                 }try {
-                  
                     await scenario[i].restore(store[i+1]);
                     Object.assign(store[i],store[i+1])
                 } catch (error) {
@@ -141,7 +140,7 @@ export class Transaction implements transaction {
             PutStepInLog(store,i,this,restoreSkip);
            }
         
-        function checkRestore(restore:any,step:any,self:any){
+        function checkRestore(restore:any,step:step,self:any){
             if(restore){
                 if(typeof restore != 'function'){
                     try {

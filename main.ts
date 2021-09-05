@@ -20,18 +20,7 @@ const scenario = [
         description: 'This action is responsible for deleting customer',
     },
     // callback for main execution
-    call: async (store) => {},
-    // callback for rollback
-    restore: async (store) => {},
-  },
-  {
-    index: 2,
-    meta: {
-        title: 'Delete customer',
-        description: 'This action is responsible for deleting customer',
-    },
-    // callback for main execution
-    call: async (store) => {},
+    call: async (store) => {throw new Error("sds")},
     // callback for rollback
     restore: async (store) => {},
   },
