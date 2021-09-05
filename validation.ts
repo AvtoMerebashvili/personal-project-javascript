@@ -1,11 +1,9 @@
-type arrOfObjects = object[];
 type obj = {}
 
 interface meta{
     title:string;
     description: string;
 }
-
 
 interface error{
     name: string,
@@ -24,7 +22,7 @@ export interface log{
 export interface scenarioinfo{
     status: boolean,
     sortedArr: step[],
-    store: arrOfObjects,
+    store: obj[],
     error: null,
 }
 
@@ -40,21 +38,22 @@ export interface transaction{
         dispatch(param:step[]): Promise<obj | any[]>;
         store: any[];
     }
-
+enum Errors {
+    noIndexOne = 'there is not index 1 in steps',
+    indexReincarnation = "this step has same index as before step",
+    brokenChain = "there is broken chain on"
+}
 
 export class Validator {
     static step(step: step,scenario:any[]){
      
-        if(scenario.indexOf(step)==0 && scenario[scenario.indexOf(step)].index != 1) throw new Error('there is not index 1 in steps')
+        if(scenario.indexOf(step)==0 && scenario[scenario.indexOf(step)].index != 1) throw new Error(Errors.noIndexOne)
                 
         if(scenario.indexOf(step) != 0){
-                if(scenario[scenario.indexOf(step)].index == scenario[scenario.indexOf(step)-1].index)throw new Error(`this step has same index as before step ${scenario.indexOf(step)}`)
-                else if(scenario[scenario.indexOf(step)].index - scenario[scenario.indexOf(step)-1].index != 1){
-                    throw new TypeError(`there is broken chain on ${scenario.indexOf(step)+1}`)
+                if(scenario[scenario.indexOf(step)].index - scenario[scenario.indexOf(step)-1].index != 1){
+                    throw new TypeError(`${Errors.brokenChain} ${scenario.indexOf(step)+1} or ${Errors.indexReincarnation}`)
                 }
         }
-        else{
-            throw new TypeError(`there is broken chain on ${scenario.indexOf(step)+1}`)
-        }
+        
     }
 };

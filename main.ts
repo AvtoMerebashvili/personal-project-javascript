@@ -24,6 +24,17 @@ const scenario = [
     // callback for rollback
     restore: async (store) => {},
   },
+  {
+    index: 2,
+    meta: {
+        title: 'Delete customer',
+        description: 'This action is responsible for deleting customer',
+    },
+    // callback for main execution
+    call: async (store) => {},
+    // callback for rollback
+    restore: async (store) => {},
+  },
 ];
 
 const transaction = new Transaction();

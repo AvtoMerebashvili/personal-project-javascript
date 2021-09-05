@@ -66,6 +66,7 @@ export class Transaction implements transaction {
             for(let step of scenario){
                 if(scenarioInfo.status){
                     try{
+                        Validator.step(step,scenario)
                         await step.call(this['store']);
                         this.deepCopy(this['store'],stores[scenario.indexOf(step)+1]);
                             this.logs.push({
