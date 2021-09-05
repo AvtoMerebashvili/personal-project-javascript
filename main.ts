@@ -2,7 +2,7 @@ import {Transaction} from './index'
 
 const scenario = [
   {
-    index: 2,
+    index: 1,
     meta: {
       title: "Read popular customers",
       description:
@@ -31,7 +31,7 @@ const transaction = new Transaction();
 (async () => {
     try {
         await transaction.dispatch(scenario);
-        const store = transaction['store']; // {} | null
+        const store = transaction.store; // {} | null
         const logs = transaction.logs; // []  
     } catch (err) {
         console.log(err);

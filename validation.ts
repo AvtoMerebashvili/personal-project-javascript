@@ -1,8 +1,24 @@
 type arrOfObjects = object[];
+type obj = {}
 
 interface meta{
     title:string;
     description: string;
+}
+
+
+interface error{
+    name: string,
+    message: string,
+    stack: string | undefined
+}
+
+export interface log{
+    index: number | undefined,
+    meta: meta | undefined,
+    storeBefore?: obj,
+    storeAfter?: obj,
+    error: null | error
 }
 
 export interface scenarioinfo{
@@ -20,14 +36,14 @@ export interface step{
 }
 
 export interface transaction{
-        logs:arrOfObjects;
-        dispatch(param:step[]):void;
-        store?: any[];
+        logs: log[];
+        dispatch(param:step[]): Promise<obj | any[]>;
+        store: any[];
     }
 
 
 export class Validator {
-    static step(step,scenario){
+    static step(step: step,scenario:any[]){
      
         if(scenario.indexOf(step)==0 && scenario[scenario.indexOf(step)].index != 1) throw new Error('there is not index 1 in steps')
                 

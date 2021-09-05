@@ -1,21 +1,18 @@
-import {Validator} from './validation'
-import {transaction} from './validation'
-import { step } from './validation'
-import {scenarioinfo} from './validation'
+import {transaction, step, scenarioinfo, log, Validator} from './validation'
 
 export class Transaction implements transaction {
-    logs:object[] = [];
+    logs = <log[]>[];
     private scenarioInfo:scenarioinfo = {
         status: true,
         sortedArr: [],
         store: [],
         error: null,
     };
-    
-    async dispatch(scenario:step[]) {
+    store:any;
+    async dispatch(scenario:step[]): Promise<any> {
         this.sortSteps(scenario,this.scenarioInfo.sortedArr)
         this.createArrforstore(scenario.length,this.scenarioInfo.store)
-        Object.defineProperty(this, "store", {value: <object | any[]>{}})
+        this.store = {};
         await this.followSteps(this.scenarioInfo.sortedArr, this.scenarioInfo , this.scenarioInfo.store)
     }
 
@@ -40,13 +37,13 @@ export class Transaction implements transaction {
         }
     }
 
-    private createArrforstore(amount:number,store:object): void{
+    private createArrforstore(amount:number,store:any): void{
         for(let i=0; i<=amount; i++){
             store[i]={}
         }
     }
 
-    private deepCopy(obj1:object ,obj2: object){
+    private deepCopy(obj1:any ,obj2: any){
         for(let property in obj1){
             if(obj1[property] instanceof Map){
                 obj2[property] = new Map([...obj1[property]]);
@@ -65,14 +62,14 @@ export class Transaction implements transaction {
         }
     }
 
-    private async followSteps(scenario:step[],scenarioInfo:scenarioinfo, stores:object[]){
+    private async followSteps(scenario:any[],scenarioInfo:scenarioinfo, stores:any[]): Promise<any>{
             for(let step of scenario){
                 if(scenarioInfo.status){
                     try{
-                        step.call(this['store']);
+                        await step.call(this['store']);
                         this.deepCopy(this['store'],stores[scenario.indexOf(step)+1]);
                             this.logs.push({
-                                index: step.index,
+                                index: <number>step.index,
                                 meta: step.meta,
                                 storeBefore: stores[scenario.indexOf(step)],
                                 storeAfter: stores[scenario.indexOf(step)+1],
@@ -80,7 +77,7 @@ export class Transaction implements transaction {
                             }); 
                         scenarioInfo.status = true;
                         if(scenario.indexOf(step) == scenario.length-1){
-                            this.logs = [];
+                            this.logs = <log[]>[];
                             this['store'] = {}
                         }
                     }catch(err){
@@ -89,10 +86,10 @@ export class Transaction implements transaction {
                             this.logs.push({
                                 index: step.index,
                                 meta: step.meta,
-                                error: {
-                                    name: err.name,
-                                    message: err.message,
-                                    stack: err.stack
+                                error:{
+                                    name: (err as Error).name,
+                                    message: (err as Error).message,
+                                    stack: (err as Error).stack
                                 }
                             })
                         }else{
@@ -100,9 +97,9 @@ export class Transaction implements transaction {
                                 index: undefined,
                                 meta: undefined,
                                 error: {
-                                    name: err.name,
-                                    message: err.message,
-                                    stack: err.stack
+                                    name: (err as Error).name,
+                                    message: (err as Error).message,
+                                    stack: (err as Error).stack
                                 }
                             })
                         }
@@ -114,8 +111,8 @@ export class Transaction implements transaction {
             }
     }
 
-    private async rollback(scenario,scenarioInfo,errorIndex){
-        let store=[];
+    private async rollback(scenario:any,scenarioInfo:any,errorIndex:any): Promise<any>{
+        let store = <object[]>[];
         let restoreSkip = 0;
         createNewStore(store,scenarioInfo.store,this)
         for(let i = errorIndex; i>=0; i--){
@@ -133,9 +130,9 @@ export class Transaction implements transaction {
                         index: scenario[i].index,
                         meta: scenario[i].meta,
                         error:{
-                            name: error.name,
-                            message: error.message,
-                            stack: error.stack
+                            name: (error as Error).name,
+                            message: (error as Error).message,
+                            stack: (error as Error).stack
                         }
                     })
                     throw this.logs
@@ -143,7 +140,7 @@ export class Transaction implements transaction {
             PutStepInLog(store,i,this,restoreSkip);
            }
         
-        function checkRestore(restore,step,self){
+        function checkRestore(restore:any,step:any,self:any){
             if(restore){
                 if(typeof restore != 'function'){
                     try {
@@ -153,9 +150,9 @@ export class Transaction implements transaction {
                             index: step.index,
                             meta: step.meta,
                             error: {
-                                name: error.name,
-                                message: error.message,
-                                stack: error.stack
+                                name: (error as Error).name,
+                                message: (error as Error).message,
+                                stack: (error as Error).stack
                             }
                         })
                         throw self.logs
@@ -167,7 +164,7 @@ export class Transaction implements transaction {
             }
         }
         
-        function PutStepInLog(store,index,self,skip){
+        function PutStepInLog(store:any,index:any,self:any,skip:any){
                 self.logs.push({
                     index: scenario[index].index,
                     meta: scenario[index].meta,
@@ -177,7 +174,7 @@ export class Transaction implements transaction {
                 })  
         }
 
-        function createNewStore(store, oldStore,self){
+        function createNewStore(store:any, oldStore:any,self:any){
             for(let i in oldStore){
                 store[i] = {};
                 self.deepCopy(oldStore[i],store[i])
